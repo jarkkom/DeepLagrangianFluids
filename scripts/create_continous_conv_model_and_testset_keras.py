@@ -13,12 +13,17 @@ parser = argparse.ArgumentParser(description='Serialize test set for continuous 
 
 parser.add_argument('-i', '--inpParticleCount', type=int, required=False, default=100)
 parser.add_argument('-o', '--outParticleCount', type=int,  required=False, default=50)
+parser.add_argument('-iF', '--inpParticleFeatureCount', type=int,  required=False, default=3)
+parser.add_argument('-oF', '--outParticleFeatureCount', type=int,  required=False, default=32)
 
 args = parser.parse_args()
 
-target_file = 'continuous_conv_1Layer_testset.json'
-shouldPrintModelOutput = True;
+numFluidParticles = args.inpParticleCount
+numStaticParticles = args.outParticleCount
+inChannels = args.inpParticleFeatureCount
+outChannels = args.outParticleFeatureCount
 
+target_file = 'continuous_conv_particles'+str(numFluidParticles)+'x'+str(numStaticParticles)+'_features'+str(inChannels)+'x'+str(outChannels)+'_testset.json'
 
 class MyTestNetwork(tf.keras.Model):
 
@@ -30,10 +35,8 @@ class MyTestNetwork(tf.keras.Model):
             interpolation='linear',
             use_window=True,
             particle_radius=0.025,
-            timestep=1 / 50,
     ):
         super().__init__(name=type(self).__name__)
-        self.layer_channels = [32, 64, 64, 3]
         self.kernel_size = kernel_size
         self.radius_scale = radius_scale
         self.coordinate_mapping = coordinate_mapping
@@ -70,7 +73,7 @@ class MyTestNetwork(tf.keras.Model):
             return conv
 
         self.conv0_fluid = Conv(name="conv0_fluid",
-                                filters=self.layer_channels[0],
+                                filters=outChannels,
                                 activation=None)
                                 
     def run(self, vel, pos0, pos1):
@@ -81,16 +84,14 @@ class MyTestNetwork(tf.keras.Model):
         return self.ans_conv0_fluid.numpy()
 
 #create inputs
-numFluidParticles = args.inpParticleCount
-numStaticParticles = args.outParticleCount
 np.random.seed(0);
-vel  = np.random.rand(numFluidParticles, 3).astype(np.float32)
+vel  = np.random.rand(numFluidParticles, inChannels).astype(np.float32)
 pos0 = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos1 = np.random.rand(numStaticParticles, 3).astype(np.float32)
 
 #create weights
-weights  = np.random.rand(4,4,4,3,32).astype(np.float32)
-bias  = np.random.rand(32,).astype(np.float32)
+weights  = np.random.rand(4,4,4,inChannels,outChannels).astype(np.float32)
+bias  = np.random.rand(outChannels,).astype(np.float32)
 
 #create model
 model = MyTestNetwork()

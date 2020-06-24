@@ -34,9 +34,16 @@ import open3d.ml.tf as ml3d
 parser = argparse.ArgumentParser(description='test')
 parser.add_argument('-i', '--inpParticleCount', type=int, required=False, default=100)
 parser.add_argument('-o', '--outParticleCount', type=int,  required=False, default=50)
+parser.add_argument('-iF', '--inpParticleFeatureCount', type=int,  required=False, default=3)
+parser.add_argument('-oF', '--outParticleFeatureCount', type=int,  required=False, default=32)
 
 args = parser.parse_args()
 
+
+numFluidParticles = args.inpParticleCount
+numStaticParticles = args.outParticleCount
+inChannels = args.inpParticleFeatureCount
+outChannels = args.outParticleFeatureCount
 
 
 # interpolation
@@ -510,16 +517,14 @@ def cconv(filter, out_positions, extent, offset, inp_positions, inp_features,
 #see https://github.com/intel-isl/Open3D/blob/5935abc12bf2228d5f0a034b4040f24f1c8cdd11/python/open3d/ml/tf/python/layers/convolutions.py
 
 #create inputs
-numFluidParticles = args.inpParticleCount
-numStaticParticles = args.outParticleCount
 np.random.seed(0)
-vel  = np.random.rand(numFluidParticles, 3).astype(np.float32)
+vel  = np.random.rand(numFluidParticles, inChannels).astype(np.float32)
 pos0 = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos1 = np.random.rand(numStaticParticles, 3).astype(np.float32)
 
 #create weights
-weights  = np.random.rand(4,4,4,3,32).astype(np.float32)
-bias  = np.random.rand(32,).astype(np.float32)
+weights  = np.random.rand(4,4,4,inChannels,outChannels).astype(np.float32)
+bias  = np.random.rand(outChannels,).astype(np.float32)
 
 #setup
 fixed_radius_search = ml3d.layers.FixedRadiusSearch(metric='L2', ignore_query_point=True, return_distances=True)
