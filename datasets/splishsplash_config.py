@@ -1,6 +1,6 @@
 """Config file that stores the paths to the SPlisHSPlasH binaries """
 # Set this variable to the path of the DynamicBoundarySimulator binary
-SIMULATOR_BIN = None
+SIMULATOR_BIN = '../../SPlisHSPlasH/bin/SPHSimulator'
 
 if SIMULATOR_BIN is None:
     raise ValueError(
@@ -19,7 +19,7 @@ def _set_splishsplash_bin_paths(simulator_bin_path):
     simulator_bin_name, extension = os.path.splitext(
         os.path.basename(simulator_bin_path))
 
-    if 'DynamicBoundarySimulator' != simulator_bin_name:
+    if 'SPHSimulator' != simulator_bin_name:
         raise ValueError(
             "Wrong name for simulator binary, expected 'DynamicBoundarySimulator', got '{}'"
             .format(simulator_bin_path))
