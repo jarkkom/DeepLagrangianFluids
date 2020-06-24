@@ -423,9 +423,6 @@ def cconv(filter, out_positions, extent, offset, inp_positions, inp_features,
 
     """
     
-    saved_args = locals()
-    print("saved_args is", saved_args)
-    
     assert filter.ndim == 5
     assert all(filter.shape)
     assert filter.shape[3] == inp_features.shape[-1]
@@ -489,7 +486,7 @@ def cconv(filter, out_positions, extent, offset, inp_positions, inp_features,
                                                 inv_extent[out_idx], offset,
                                                 align_corners,
                                                 coordinate_mapping)
-
+                                                
             interp_w, interp_idx = interpolate(coords,
                                                filter_xyz_size,
                                                interpolation=interpolation)
@@ -519,15 +516,10 @@ np.random.seed(0)
 vel  = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos0 = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos1 = np.random.rand(numStaticParticles, 3).astype(np.float32)
-print('vel shape:', vel.shape);
-print('pos0 shape:', pos0.shape);
-print('pos1 shape:', pos1.shape);
 
 #create weights
 weights  = np.random.rand(4,4,4,3,32).astype(np.float32)
 bias  = np.random.rand(32,).astype(np.float32)
-print('weights shape:', weights.shape);
-print('bias shape:', bias.shape);
 
 #setup
 fixed_radius_search = ml3d.layers.FixedRadiusSearch(metric='L2', ignore_query_point=True, return_distances=True)
@@ -547,8 +539,11 @@ inp_importance = np.empty((0,))
 neighbors_index, neighbors_row_splits, neighbors_distance = fixed_radius_search(inp_positions, out_positions, radius=radius, hash_table=None)
 
 neighbors_index = neighbors_index.numpy()
+
 neighbors_row_splits = neighbors_row_splits.numpy()
+
 neighbors_distance = neighbors_distance.numpy()
+
 neighbors_distance_normalized = neighbors_distance / (radius * radius)
 neighbors_importance = window_poly6(neighbors_distance_normalized)
 
@@ -557,7 +552,6 @@ coordinate_mapping = BALL_TO_CUBE_VOLUME_PRESERVING
 normalize = False
 interpolation = LINEAR
 
-print(extent)
 result = cconv(filter, out_positions, extent, offset, inp_positions, inp_features,
 inp_importance, neighbors_index, neighbors_importance,
 neighbors_row_splits, align_corners, coordinate_mapping, normalize,
@@ -565,13 +559,8 @@ interpolation)
 
 result += bias
 
-
-print(np.sum(vel))
-print(np.sum(pos0))
-print(np.sum(pos1))
-print(np.sum(weights))
-print(np.sum(bias))
-print(np.sum(result))
-
 print (result)
 print (result.shape)
+print(np.sum(result))
+
+

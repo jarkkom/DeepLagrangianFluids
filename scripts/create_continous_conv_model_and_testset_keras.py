@@ -78,7 +78,6 @@ class MyTestNetwork(tf.keras.Model):
         filter_extent = tf.constant(self.filter_extent)
         self.ans_conv0_fluid = self.conv0_fluid(vel, pos0, pos1, filter_extent)
 
-        print(filter_extent)
         return self.ans_conv0_fluid.numpy()
 
 #create inputs
@@ -88,21 +87,13 @@ np.random.seed(0);
 vel  = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos0 = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos1 = np.random.rand(numStaticParticles, 3).astype(np.float32)
-print('vel shape:', vel.shape);
-print('pos0 shape:', pos0.shape);
-print('pos1 shape:', pos1.shape);
 
 #create weights
 weights  = np.random.rand(4,4,4,3,32).astype(np.float32)
 bias  = np.random.rand(32,).astype(np.float32)
 
-print('weights shape:', weights.shape);
-print('bias shape:', bias.shape);
-
 #create model
 model = MyTestNetwork()
-print('Num layer: ', len(model.layers))
-print('layer0: ', model.layers[0])
 #run the networks a first time to initialize the shapes then load weights
 resultBeforeWeight = model.run(vel, pos0, pos1)
 model.layers[0].set_weights([weights,bias])
