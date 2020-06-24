@@ -3,10 +3,18 @@
 '''Model won't be exported as there is not way currently to import custom layer to barracuda'''
 
 import os 
+import argparse
 import tensorflow as tf
 import open3d.ml.tf as o3dml
 import numpy as np
 import json
+
+parser = argparse.ArgumentParser(description='Serialize test set for continuous conv test from TF/Open3D-ml')
+
+parser.add_argument('-i', '--inpParticleCount', type=int, required=False, default=100)
+parser.add_argument('-o', '--outParticleCount', type=int,  required=False, default=50)
+
+args = parser.parse_args()
 
 target_file = 'continuous_conv_1Layer_testset.json'
 shouldPrintModelOutput = True;
@@ -42,6 +50,7 @@ class MyTestNetwork(tf.keras.Model):
         def Conv(name, activation=None, **kwargs):
             conv_fn = o3dml.layers.ContinuousConv
 
+
             window_fn = None
             if self.use_window == True:
                 window_fn = window_poly6
@@ -69,11 +78,12 @@ class MyTestNetwork(tf.keras.Model):
         filter_extent = tf.constant(self.filter_extent)
         self.ans_conv0_fluid = self.conv0_fluid(vel, pos0, pos1, filter_extent)
 
+        print(filter_extent)
         return self.ans_conv0_fluid.numpy()
 
 #create inputs
-numFluidParticles = 100
-numStaticParticles = 50
+numFluidParticles = args.inpParticleCount
+numStaticParticles = args.outParticleCount
 np.random.seed(0);
 vel  = np.random.rand(numFluidParticles, 3).astype(np.float32)
 pos0 = np.random.rand(numFluidParticles, 3).astype(np.float32)
@@ -85,6 +95,7 @@ print('pos1 shape:', pos1.shape);
 #create weights
 weights  = np.random.rand(4,4,4,3,32).astype(np.float32)
 bias  = np.random.rand(32,).astype(np.float32)
+
 print('weights shape:', weights.shape);
 print('bias shape:', bias.shape);
 
@@ -99,10 +110,9 @@ model.layers[0].set_weights([weights,bias])
 #run the networks with the weights
 result = model.run(vel, pos0, pos1)
 
-if shouldPrintModelOutput:
-    print (result)
-    #for i, weight in enumerate(model.layers[0].weights):
-    #    print('weight', i, ': ', weight.shape)
+print (result)
+print (result.shape)
+print(np.sum(result))
 
 
 input_dict0 = {}
@@ -141,6 +151,15 @@ input_dict3['shape']['width'] = weights.shape[3]
 input_dict3['shape']['channels'] = weights.shape[4]
 input_dict3['data'] = weights.flatten().tolist()
 
+input_dict4 = {}
+input_dict4['shape'] = {}
+input_dict4['name'] = 'bias'
+input_dict4['shape']['batch'] = 1
+input_dict4['shape']['height'] = 1
+input_dict4['shape']['width'] = 1
+input_dict4['shape']['channels'] = bias.shape[0]
+input_dict4['data'] = bias.flatten().tolist()
+
 output_dict = {}
 output_dict['name'] = 'output'
 output_dict['shape'] = {}
@@ -158,6 +177,7 @@ json_data['inputs'].append(input_dict0)
 json_data['inputs'].append(input_dict1)
 json_data['inputs'].append(input_dict2)
 json_data['inputs'].append(input_dict3)
+json_data['inputs'].append(input_dict4)
 json_data['outputs'].append(output_dict)
 
 file = open(target_file, 'w+')
