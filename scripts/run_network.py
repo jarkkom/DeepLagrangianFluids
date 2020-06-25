@@ -40,6 +40,7 @@ def run_sim(trainscript_module, weights_path, scene, num_steps, output_dir,
     model = trainscript_module.create_model()
     model.init()
     model.load_weights(weights_path, by_name=True)
+    model.setJSONDumpMode(options.dumpIntermediateTensor)
 
     # prepare static particles
     walls = []
@@ -131,6 +132,7 @@ def main():
     parser.add_argument("--write-bgeo",
                         action='store_true',
                         help="Export particle data also as .bgeo sequence")
+    parser.add_argument('-d', '--dumpIntermediateTensor', type=bool, required=False, default=False)
 
     args = parser.parse_args()
     print(args)

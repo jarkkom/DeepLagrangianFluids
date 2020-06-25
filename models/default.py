@@ -1,7 +1,8 @@
 import tensorflow as tf
 import open3d.ml.tf as o3dml
 import numpy as np
-
+import os
+import json
 
 class MyParticleNetwork(tf.keras.Model):
 
@@ -26,7 +27,8 @@ class MyParticleNetwork(tf.keras.Model):
         self.filter_extent = np.float32(self.radius_scale * 6 *
                                         self.particle_radius)
         self.timestep = timestep
-
+        self.dumpModeEnabled = False
+        self.frameIdx = 0
         self._all_convs = []
 
         def window_poly6(r_sqr):
@@ -73,6 +75,9 @@ class MyParticleNetwork(tf.keras.Model):
             conv = Conv(name='conv{0}'.format(i), filters=ch, activation=None)
             self.denses.append(dense)
             self.convs.append(conv)
+            
+    def setJSONDumpMode(self, dumpModeEnabled):
+        self.dumpModeEnabled = dumpModeEnabled
 
     def integrate_pos_vel(self, pos1, vel1):
         """Apply gravity and integrate position and velocity"""
@@ -146,16 +151,54 @@ class MyParticleNetwork(tf.keras.Model):
         self.pos_correction = (1.0 / 128) * self.ans_convs[-1]
         return self.pos_correction
 
+    def dumpTensor(self, name, tensor):
+        if self.dumpModeEnabled & self.frameIdx != 0:
+            target_file = 'frame'+str(self.frameIdx)+'_'+name+'.json'
+            file = open(target_file, 'w+')
+            if tensor == None:
+                shape = None
+                file.write('tensor was None')
+            else:
+                numpyTensor = tensor.numpy()
+                shape = numpyTensor.shape
+                dict = {}
+                dict['shape'] = {}
+                dict['name'] = 'inputFeature'
+                dict['shape']['batch'] = shape[0]
+                dict['shape']['height'] = 1
+                dict['shape']['width'] = 1
+                dict['shape']['channels'] = shape[1]
+                dict['data'] = numpyTensor.flatten().tolist()
+                json_data = {}
+                json_data['inputs'] = []
+                json_data['inputs'].append(dict)
+                json.dump(json_data, file)
+
+            print('tensor:', name, 'of shape:',shape,'at frame:',self.frameIdx,'was dumped to:',target_file)
+            file.close()
+
     def call(self, inputs, fixed_radius_search_hash_table=None):
         """computes 1 simulation timestep"""
         pos, vel, feats, box, box_feats = inputs
+        self.dumpTensor('pos', pos)
+        self.dumpTensor('vel', vel)
+        self.dumpTensor('feats', feats)
+        self.dumpTensor('box', box)
+        self.dumpTensor('box_feats', box_feats)
 
         pos2, vel2 = self.integrate_pos_vel(pos, vel)
-        pos_correction = self.compute_correction(
-            pos2, vel2, feats, box, box_feats, fixed_radius_search_hash_table)
-        pos2_corrected, vel2_corrected = self.compute_new_pos_vel(
-            pos, vel, pos2, vel2, pos_correction)
+        self.dumpTensor('pos2', pos2)
+        self.dumpTensor('vel2', vel2)
+        
+        pos_correction = self.compute_correction(pos2, vel2, feats, box, box_feats, fixed_radius_search_hash_table)
+        self.dumpTensor('pos_correction', pos_correction)
+            
+        pos2_corrected, vel2_corrected = self.compute_new_pos_vel(pos, vel, pos2, vel2, pos_correction)
+        self.dumpTensor('pos2_corrected', pos2_corrected)
+        self.dumpTensor('vel2_corrected', vel2_corrected)
 
+        self.frameIdx = self.frameIdx + 1
+        
         return pos2_corrected, vel2_corrected
 
     def init(self, feats_shape=None):
