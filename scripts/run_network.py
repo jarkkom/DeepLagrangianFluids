@@ -41,6 +41,8 @@ def run_sim(trainscript_module, weights_path, scene, num_steps, output_dir,
     model.init()
     model.load_weights(weights_path, by_name=True)
     model.setJSONDumpMode(options.dumpIntermediateTensor)
+    model.setMaxParticleCount(options.maxParticleCount)
+    model.setSceneName(options.scene)
 
     # prepare static particles
     walls = []
@@ -82,6 +84,9 @@ def run_sim(trainscript_module, weights_path, scene, num_steps, output_dir,
                 vel = np.concatenate([vel, velocities], axis=0)
 
         if pos.shape[0]:
+            if options.maxParticleCount!=-1:
+                pos = pos[0:options.maxParticleCount,:]
+                vel = vel[0:options.maxParticleCount,:]
             fluid_output_path = os.path.join(output_dir,
                                              'fluid_{0:04d}'.format(step))
             if isinstance(pos, np.ndarray):
@@ -133,6 +138,7 @@ def main():
                         action='store_true',
                         help="Export particle data also as .bgeo sequence")
     parser.add_argument('-d', '--dumpIntermediateTensor', type=bool, required=False, default=False)
+    parser.add_argument('-m', '--maxParticleCount', type=int, required=False, default=-1)
 
     args = parser.parse_args()
     print(args)

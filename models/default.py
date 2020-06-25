@@ -29,6 +29,8 @@ class MyParticleNetwork(tf.keras.Model):
         self.timestep = timestep
         self.dumpModeEnabled = False
         self.frameIdx = 0
+        self.maxParticleCount = -1
+        self.sceneName = ''
         self._all_convs = []
 
         def window_poly6(r_sqr):
@@ -78,6 +80,12 @@ class MyParticleNetwork(tf.keras.Model):
             
     def setJSONDumpMode(self, dumpModeEnabled):
         self.dumpModeEnabled = dumpModeEnabled
+        
+    def setMaxParticleCount(self, maxParticleCount):
+        self.maxParticleCount = maxParticleCount
+    
+    def setSceneName(self, sceneName):
+        self.sceneName = sceneName
 
     def integrate_pos_vel(self, pos1, vel1):
         """Apply gravity and integrate position and velocity"""
@@ -153,7 +161,10 @@ class MyParticleNetwork(tf.keras.Model):
 
     def dumpTensor(self, name, tensor):
         if self.dumpModeEnabled & self.frameIdx != 0:
-            target_file = 'frame'+str(self.frameIdx)+'_'+name+'.json'
+            if self.maxParticleCount==-1:
+                target_file = self.sceneName+'frame'+str(self.frameIdx)+'_'+name+'.json'
+            else:
+                target_file = self.sceneName+'frame'+str(self.frameIdx)+'_'+name+'_maxparticle'+str(self.maxParticleCount)+'.json'
             file = open(target_file, 'w+')
             if tensor == None:
                 shape = None
